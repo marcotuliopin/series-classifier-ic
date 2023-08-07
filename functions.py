@@ -63,26 +63,28 @@ def calculate_js_distance(data, labels):
     Returns:
     js_mean (pd.DataFrame): Jensen Shannon distance between samples of distinct or same class.
     """
-    symbols = np.unique(np.unique(s) for s in data)
+    symbols = np.unique(data)
     classes = np.unique(labels)
-    print('ok')
+    frequencies = data.apply(lambda row : calculate_frequency(row, symbols))
+
     js = []
+    # js = []
     # do for each pair of classes
-    for c1 in classes:
-        for c2 in classes:
-            js_distance = []
-            # get data from each class
-            class_data_1 = data[labels == c1]
-            class_data_2 = data[labels == c2]
-            # calculate jensenshannon distance for each pair of points
-            for i in range(len(class_data_1)):
-                frequency_1 = calculate_frequency(class_data_1[i], symbols)
-                for j in range(len(class_data_2)):
-                    frequency_2 = calculate_frequency(class_data_2[j], symbols)
-                    js_distance.append(jensenshannon(frequency_1, frequency_2))
-            js.append([c1, c2, js_distance])
-            print(js[-1])
-    js = pd.DataFrame(data=js, columns=['Class 1', 'Class 2', 'JS Distance'])
+    # for c1 in classes:
+    #     for c2 in classes:
+    #         js_distance = []
+    #         # get data from each class
+    #         class_data_1 = data[labels == c1]
+    #         class_data_2 = data[labels == c2]
+    #         # calculate jensenshannon distance for each pair of points
+    #         for i in range(len(class_data_1)):
+    #             frequency_1 = calculate_frequency(class_data_1[i], symbols)
+    #             for j in range(len(class_data_2)):
+    #                 frequency_2 = calculate_frequency(class_data_2[j], symbols)
+    #                 js_distance.append(jensenshannon(frequency_1, frequency_2))
+    #         js.append([c1, c2, js_distance])
+    #         print(js[-1])
+    # js = pd.DataFrame(data=js, columns=['Class 1', 'Class 2', 'JS Distance'])
     return js
 
 
@@ -98,7 +100,7 @@ def calculate_frequency(data, symbols):
             frequency.append(counts[np.where(unique == symbol)[0][0]])
         else:
             frequency.append(0)
-    return np.array(frequency)
+    return pd.Series(frequency)
 
 
 def compute_symbols_dictionary(sax_unique_values, window_size):
