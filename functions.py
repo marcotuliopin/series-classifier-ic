@@ -4,19 +4,20 @@ import itertools
 from pyts.approximation import SymbolicAggregateApproximation
 from sklearn.preprocessing import StandardScaler
 from scipy.spatial.distance import jensenshannon
+from itertools import combinations
 
 
 def run_sax(data, n_bins): 
     """
     Calculate SAX transformation
 
-    -----------
     Parameters:
+    -----------
     data (pd.Series): Series containing the data to use in the transformation.
     n_bins (int): The number of letters to use in the Symbolic Aggregate Approximation (SAX) representation of the data. 
 
-    -----------
     Returns:
+    -----------
     sax_values (np.array of string): SAX sequence.
     """
 
@@ -31,15 +32,15 @@ def create_new_representation(data, window_size, dict):
     """
     Group symbols in the pd.Series and create a new representation of lower dimensionality of the data
 
-    -----------
     Parameters:
-    data (pd.Series): Series containing the data to use in the transformation.
+    -----------
+    data (pd.Series): Vector containing the data to use in the transformation.
     window_size (int): The number of symbols to be groupped at a time.
     dict (dictionary): The encoding of each symbol to a numeric value.
 
-    -----------
     Returns:
-    new_representation (pd.Series): new data representation.
+    -----------
+    new_representation (pd.Series): Vector containing the new data representation.
     """
 
     new_representation = []
@@ -50,42 +51,65 @@ def create_new_representation(data, window_size, dict):
     return pd.Series(new_representation)
 
 
-def calculate_js_distance(data, labels):
+def calculate_js_distance(data):
     """
-    Calculate the mean Jensenshannon distance between pairs of points for each pair of classes.
+    Calculate the Jensenshannon distance between pairs of points for each pair of classes.
 
-    -----------
     Parameters:
-    data (pd.DataFrame): Series containing the data to use in the transformation.
-    labels (pd.Series): labels of the dataset.
-
     -----------
+    data (pd.DataFrame): Matrix containing the data to use in the transformation.
+
     Returns:
-    js_mean (pd.DataFrame): Jensen Shannon distance between samples of distinct or same class.
+    -----------
+    js_mean (pd.DataFrame): Jensen Shannon distance between samples' pairs.
     """
     symbols = np.unique(data)
-    classes = np.unique(labels)
     frequencies = data.apply(lambda row : calculate_frequency(row, symbols))
 
-    js = []
-    # js = []
-    # do for each pair of classes
-    # for c1 in classes:
-    #     for c2 in classes:
-    #         js_distance = []
-    #         # get data from each class
-    #         class_data_1 = data[labels == c1]
-    #         class_data_2 = data[labels == c2]
-    #         # calculate jensenshannon distance for each pair of points
-    #         for i in range(len(class_data_1)):
-    #             frequency_1 = calculate_frequency(class_data_1[i], symbols)
-    #             for j in range(len(class_data_2)):
-    #                 frequency_2 = calculate_frequency(class_data_2[j], symbols)
-    #                 js_distance.append(jensenshannon(frequency_1, frequency_2))
-    #         js.append([c1, c2, js_distance])
-    #         print(js[-1])
-    # js = pd.DataFrame(data=js, columns=['Class 1', 'Class 2', 'JS Distance'])
-    return js
+    # calculate Jensenshannon distance for each pair
+    pairwise_js = np.zeros((len(frequencies), len(frequencies)))
+    pairwise_js[np.triu_indices(len(frequencies), k=1)] = [jensenshannon(x, y) for x, y in combinations(frequencies.values, r=2)]
+    pairwise_js += pairwise_js.T
+    pairwise_js = pairwise_js
+
+    return pairwise_js
+
+
+def get_js_by_class(pairwise_js, labels):
+    """
+    Given a square matrix of Jensenshannon distances for each pair of samples, returns a vector of Jensenshannon
+    distances for pairs of samples from the same class and another for pairs from different classes.
+
+    Parameters:
+    -----------
+    pairwise_js (pd.DataFrame): Matrix of Jensenshannon distances for each pair of samples.
+    labels (pd.Series): Vector containing the label of each sample.
+
+    Returns:
+    -----------
+    eq_class_js (pd.Series): Vector of Jensenshannon distances for pairs from the same class.
+    diff_class_js (pd.Series): Vector of Jensenshannon distances for pairs of from different classes.
+    """
+    eq_class_js = np.ones(pairwise_js.shape) * -1
+    diff_class_js = np.ones(pairwise_js.shape) * -1
+
+    for i in range(pairwise_js.shape[0]):
+        indexes = (labels[i + 1:] == labels[i])
+        p_tmp = pairwise_js[i, i + 1:]
+        # get JS distance from instances that belong to the same class
+        eq_tmp = eq_class_js[i, i + 1:]
+        eq_tmp[indexes] = p_tmp[indexes]
+        # get JS distance from instances that belong to the different classes
+        diff_tmp = diff_class_js[i, i + 1:]
+        diff_tmp[~indexes] = p_tmp[~indexes]
+
+    eq_class_js = eq_class_js.flatten()
+    eq_class_js = pd.Series(eq_class_js[np.where(eq_class_js != -1)])
+
+    diff_class_js = diff_class_js.flatten()
+    diff_class_js = pd.Series(diff_class_js[np.where(diff_class_js != -1)])
+
+    return eq_class_js, diff_class_js
 
 
 def calculate_frequency(data, symbols):
@@ -107,13 +131,13 @@ def compute_symbols_dictionary(sax_unique_values, window_size):
     """
     Compute the encoding of each symbol to a numeric value.
     
-    -----------
     Parameters:
+    -----------
     sax_unique_values
     window_size
 
-    -----------
     Returns:
+    -----------
     dict (dictionary): The encoding of each symbol to a numeric value.
     """
     l = []
@@ -132,13 +156,13 @@ def compute_transition_matrix(data, n_symbols):
     """
     Compute transition matrix
 
-    -----------
     Parameters:
+    -----------
     data (pd.Series): Series containing the data to use in the transition matrix.
     n_symbols (int): The number of unique symbols in the data. 
 
-    -----------
     Returns:
+    -----------
     transition_matrix (pd.Dataframe of float): Markov transition matrix.
     """
     transition_matrix = pd.DataFrame(np.zeros((n_symbols, n_symbols)), columns=np.unique(data), index=np.unique(data))
