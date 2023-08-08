@@ -51,8 +51,6 @@ def plot_js_box(eq_class, diff_class, DATA_NAME, window_size, n_bins):
     sns.set_context("paper", rc={"font.size":15,"axes.titlesize":15,"axes.labelsize":15})  
     plt.figure(figsize=(8, 6))
 
-    eq_class = eq_class.apply(pd.Series).stack().reset_index(drop=True)
-    diff_class = diff_class.apply(pd.Series).stack().reset_index(drop=True)
     combined_distances = pd.DataFrame({'Equal Class' : eq_class,
                                        'Different Class' : diff_class})
 
