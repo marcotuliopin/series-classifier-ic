@@ -66,7 +66,7 @@ def calculate_js_distance(data):
     symbols = np.unique(data)
     frequencies = data.apply(lambda row : calculate_frequency(row, symbols))
 
-    # calculate Jensenshannon distance for each pair
+    # Calculate Jensenshannon distance for each pair
     pairwise_js = np.zeros((len(frequencies), len(frequencies)))
     pairwise_js[np.triu_indices(len(frequencies), k=1)] = [jensenshannon(x, y) for x, y in combinations(frequencies.values, r=2)]
     pairwise_js += pairwise_js.T
@@ -96,10 +96,10 @@ def get_js_by_class(pairwise_js, labels):
     for i in range(pairwise_js.shape[0]):
         indexes = (labels[i + 1:] == labels[i])
         p_tmp = pairwise_js[i, i + 1:]
-        # get JS distance from instances that belong to the same class
+        # Get JS distance from instances that belong to the same class
         eq_tmp = eq_class_js[i, i + 1:]
         eq_tmp[indexes] = p_tmp[indexes]
-        # get JS distance from instances that belong to the different classes
+        # Get JS distance from instances that belong to the different classes
         diff_tmp = diff_class_js[i, i + 1:]
         diff_tmp[~indexes] = p_tmp[~indexes]
 
@@ -124,7 +124,9 @@ def calculate_frequency(data, symbols):
             frequency.append(counts[np.where(unique == symbol)[0][0]])
         else:
             frequency.append(0)
-    return pd.Series(frequency)
+
+    frequency = pd.Series(frequency)
+    return frequency
 
 
 def compute_symbols_dictionary(sax_unique_values, window_size):
