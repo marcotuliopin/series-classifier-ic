@@ -64,7 +64,7 @@ def calculate_js_distance(data):
     js_mean (pd.DataFrame): Jensen Shannon distance between samples' pairs.
     """
     symbols = np.unique(data)
-    frequencies = data.apply(lambda row : calculate_frequency(row, symbols))
+    frequencies = data.apply(lambda row : calculate_frequency(row, symbols), axis=1)
 
     # Calculate Jensenshannon distance for each pair
     pairwise_js = np.zeros((len(frequencies), len(frequencies)))
