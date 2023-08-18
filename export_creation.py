@@ -61,6 +61,48 @@ def plot_js_box(eq_class, diff_class, DATA_NAME, window_size, n_bins):
     plt.close()
 
 
+def save_classifier_metrics(acc_score, original_acc_score, cm, original_cm, DATA_NAME, window_size,
+                             n_bins, y, label, algorithm):
+    """
+    Save the results of accuracy score and confusion matrix for the transformed and original data.
+    """
+    plot_confusion_matrix(original_cm, DATA_NAME, window_size, n_bins, label, {algorithm}, original=True)
+    plot_confusion_matrix(cm, DATA_NAME, window_size, n_bins, y)
+    with open(f'../metrics/{DATA_NAME}/window_{window_size}/bins_{n_bins}/{algorithm}/accuracy.txt', 'w') as file:
+        file.write('With the transformation: {}\n\n'.format(acc_score))
+        file.write('Without the transformation: {}\n\n'.format(original_acc_score))
+        file.write('Difference in performance: {}'.format(acc_score - original_acc_score))
+
+
+def plot_confusion_matrix(cm, DATA_NAME, window_size, n_bins, label, algorithm, original=False):
+    val = np.mat(cm) 
+    classnames = list(set(label))
+    df_cm = pd.DataFrame(val, index=classnames, columns=classnames)
+    plt.figure()
+    heatmap = sns.heatmap(df_cm, annot=True, cmap="Blues")
+    heatmap.yaxis.set_ticklabels(heatmap.yaxis.get_ticklabels(), rotation=0, ha='right')
+    heatmap.xaxis.set_ticklabels(heatmap.xaxis.get_ticklabels(), rotation=45, ha='right')
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+    plt.title('Classifier Results')
+    Path(f'../fig/conmat/{DATA_NAME}/window_{window_size}/bins_{n_bins}/{algorithm}').mkdir(parents=True, exist_ok=True)
+    if original:
+        plt.savefig(f'../fig/conmat/{DATA_NAME}/window_{window_size}/bins_{n_bins}/{algorithm}/og_fig.png')
+    else:
+        plt.savefig(f'../fig/conmat/{DATA_NAME}/window_{window_size}/bins_{n_bins}/{algorithm}/fig.png')
+    plt.close()
+
+
+def plot_accuracies(acc_score, og_acc_score, DATA_NAME, algorithm):
+    plt.figure()
+    plt.plot(acc_score, label='Modified')
+    plt.plot(og_acc_score, label='Unmodified')
+    plt.legend()
+    Path(f'../fig/acc/{DATA_NAME}/{algorithm}').mkdir(parents=True, exist_ok=True)
+    plt.savefig(f'../fig/acc/{DATA_NAME}/{algorithm}/fig.png')
+    plt.close()
+
+
 def plot_entropy_sc(comp_entrop, labels, DATA_NAME, window_size, n_bins):
     """
     Plot scatterplot of entropy x statistical complexity of the data.
